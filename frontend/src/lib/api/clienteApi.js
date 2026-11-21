@@ -1,4 +1,7 @@
-const URL_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+export const URL_API =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+
+const METODOS_PROTEGIDOS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export class ErrorApi extends Error {
   constructor(mensaje, estado = 0) {
@@ -9,38 +12,33 @@ export class ErrorApi extends Error {
 }
 
 function leerCookie(nombre) {
-  if (typeof document === "undefined") {
-    return null;
-  }
+  if (typeof document === "undefined") return null;
 
   const cookie = document.cookie
     .split("; ")
-    .find((elemento) => elemento.startsWith(`${nombre}=`));
+    .find((valor) => valor.startsWith(`${nombre}=`));
 
   if (!cookie) return null;
 
   return decodeURIComponent(cookie.substring(nombre.length + 1));
 }
 
-async function obtenerTokenCsrf() {
-  let token = leerCookie("XSRF-TOKEN");
-
-  if (token) return token;
-
-  const respuesta = await fetch(`${URL_API}/auth/csrf`, {
+async function obtenerTokenCsrf(signal) {
+  const respuesta = await fetch(`${URL_API}/autenticacion/csrf`, {
     method: "GET",
     credentials: "include",
     cache: "no-store",
+    signal,
   });
 
   if (!respuesta.ok) {
     throw new ErrorApi(
-      "No se pudo inicializar la seguridad.",
+      "No fue posible inicializar la seguridad.",
       respuesta.status,
     );
   }
 
-  token = leerCookie("XSRF-TOKEN");
+  const token = leerCookie("XSRF-TOKEN");
 
   if (!token) {
     throw new ErrorApi("No se recibió el token de seguridad.");
@@ -49,18 +47,27 @@ async function obtenerTokenCsrf() {
   return token;
 }
 
-export async function peticionApi(ruta, { metodo = "GET", datos } = {}) {
+export async function clienteApi(ruta, { metodo = "GET", datos, signal } = {}) {
+  const metodoNormalizado = metodo.toUpperCase();
   const encabezados = {};
 
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(metodo)) {
-    encabezados["X-XSRF-TOKEN"] = await obtenerTokenCsrf();
+  if (METODOS_PROTEGIDOS.has(metodoNormalizado)) {
+    try {
+      encabezados["X-XSRF-TOKEN"] = await obtenerTokenCsrf(signal);
+    } catch (error) {
+      if (error.name === "AbortError") throw error;
+      if (error instanceof ErrorApi) throw error;
+
+      throw new ErrorApi("No fue posible conectarse con el servidor.");
+    }
   }
 
   const opciones = {
-    method: metodo,
+    method: metodoNormalizado,
     credentials: "include",
     cache: "no-store",
     headers: encabezados,
+    signal,
   };
 
   if (datos !== undefined) {
@@ -72,12 +79,13 @@ export async function peticionApi(ruta, { metodo = "GET", datos } = {}) {
 
   try {
     respuesta = await fetch(`${URL_API}${ruta}`, opciones);
-  } catch {
+  } catch (error) {
+    if (error.name === "AbortError") throw error;
+
     throw new ErrorApi("No fue posible conectarse con el servidor.");
   }
 
   const texto = await respuesta.text();
-
   let contenido = null;
 
   if (texto) {
@@ -89,12 +97,12 @@ export async function peticionApi(ruta, { metodo = "GET", datos } = {}) {
   }
 
   if (!respuesta.ok) {
-    throw new ErrorApi(
+    const mensaje =
       contenido?.mensaje ||
-        contenido?.message ||
-        `La solicitud falló (${respuesta.status}).`,
-      respuesta.status,
-    );
+      contenido?.message ||
+      `Error HTTP ${respuesta.status}`;
+
+    throw new ErrorApi(mensaje, respuesta.status);
   }
 
   return contenido;
