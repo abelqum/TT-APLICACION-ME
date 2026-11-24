@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   Users,
+  UserRound,
   CircleDollarSign,
   ReceiptText,
   Boxes,
@@ -27,7 +28,7 @@ const ENLACES = [
     ruta: "/dashboard/ingresos",
     icono: CircleDollarSign,
     roles: ["ADMIN"],
-    habilitado: false,
+    habilitado: true,
   },
   {
     nombre: "Egresos",
@@ -56,6 +57,13 @@ const ENLACES = [
     icono: ListTodo,
     roles: ["ADMIN", "EMPLEADO"],
     habilitado: false,
+  },
+  {
+    nombre: "Clientes",
+    ruta: "/dashboard/clientes",
+    icono: UserRound,
+    roles: ["ADMIN", "EMPLEADO"],
+    habilitado: true,
   },
   {
     nombre: "Usuarios",
@@ -107,12 +115,14 @@ export default function BarraLateral({
         <div className="flex min-h-22 items-center justify-between border-b border-white/10 px-5">
           <div>
             <h2 className="text-lg font-black">Sistema de Gestión</h2>
+
             <p className="mt-1 text-xs text-blue-200">
               {usuario.empresa?.nombre || "Microempresa"}
             </p>
           </div>
 
           <button
+            type="button"
             onClick={cerrarMenu}
             aria-label="Cerrar menú"
             className="lg:hidden"
@@ -159,6 +169,7 @@ export default function BarraLateral({
         </nav>
 
         <button
+          type="button"
           onClick={cerrarSesion}
           className="m-3 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-red-200 hover:bg-red-900/30"
         >

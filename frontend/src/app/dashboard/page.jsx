@@ -42,6 +42,14 @@ export default function PaginaDashboard() {
           administrativos se incorporarán en los siguientes incrementos.
         </p>
       </div>
+
+      <div className="rounded-xl border border-blue-200 bg-blue-50 p-6">
+        <h3 className="font-bold text-blue-900">Incremento 2: Ingresos</h3>
+        <p className="mt-2 text-sm text-blue-800">
+          Esta pantalla es provisional. Los indicadores, gráficas y módulos
+          administrativos se incorporarán en los siguientes incrementos.
+        </p>
+      </div>
     </div>
   );
 }
