@@ -79,3 +79,25 @@ export function mostrarCarga(titulo = "Procesando...") {
 export function cerrarCarga() {
   Swal.close();
 }
+
+export async function mostrarMensajeGestion(titulo, mensaje, tipo = "success") {
+  const { default: Swal } = await import("sweetalert2");
+
+  const dialogoAbierto = document.querySelector("dialog[open]");
+
+  return Swal.fire({
+    target: dialogoAbierto || document.body,
+    icon: tipo,
+    title: titulo,
+    text: mensaje,
+    confirmButtonText: "Aceptar",
+  });
+}
+
+export function obtenerMensajeErrorGestion(error) {
+  return (
+    error?.mensaje ||
+    error?.message ||
+    "Ocurrió un error al realizar la operación."
+  );
+}
